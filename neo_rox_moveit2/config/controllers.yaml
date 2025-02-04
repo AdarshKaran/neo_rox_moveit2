@@ -17,12 +17,12 @@ moveit_simple_controller_manager:
     type: FollowJointTrajectory
     default: true
     joints:
-      - ur5shoulder_pan_joint
-      - ur5shoulder_lift_joint
-      - ur5elbow_joint
-      - ur5wrist_1_joint
-      - ur5wrist_2_joint
-      - ur5wrist_3_joint
+      - $(var prefix)shoulder_pan_joint
+      - $(var prefix)shoulder_lift_joint
+      - $(var prefix)elbow_joint
+      - $(var prefix)wrist_1_joint
+      - $(var prefix)wrist_2_joint
+      - $(var prefix)wrist_3_joint
 
 
   joint_trajectory_controller:
@@ -30,9 +30,9 @@ moveit_simple_controller_manager:
     type: FollowJointTrajectory
     default: false
     joints:
-      - ur5shoulder_pan_joint
-      - ur5shoulder_lift_joint
-      - ur5elbow_joint
-      - ur5wrist_1_joint
-      - ur5wrist_2_joint
-      - ur5wrist_3_joint
+      - $(var prefix)shoulder_pan_joint
+      - $(var prefix)shoulder_lift_joint
+      - $(var prefix)elbow_joint
+      - $(var prefix)wrist_1_joint
+      - $(var prefix)wrist_2_joint
+      - $(var prefix)wrist_3_joint
