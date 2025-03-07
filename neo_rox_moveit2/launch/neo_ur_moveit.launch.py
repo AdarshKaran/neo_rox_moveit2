@@ -72,17 +72,24 @@ def launch_setup(context, *args, **kwargs):
     controllers_yaml = os.path.join(
         get_package_share_directory(str(moveit_config_package.perform(context))),
         "config",
-        "controllers.yaml",
+        "moveit_controllers.yaml",
     )
     controllers_yaml_with_substitutions = ParameterFile(controllers_yaml, allow_substs=True)
     # Evaluate the parameter file to apply dynamic substitutions
     controllers_yaml_with_substitutions.evaluate(context)
-    controllers_yaml = os.path.join(
-        get_package_share_directory('neo_rox_moveit2'),
-        "config",
+    
+    # Load the controllers YAML
+    controllers_yaml_dict = load_yaml(
+        str(moveit_config_package.perform(context)),
         str(controllers_yaml_with_substitutions.param_file)
     )
-    
+
+    # The scaled_joint_trajectory_controller does not work on fake hardware
+    use_fake_hardware = context.perform_substitution(LaunchConfiguration("use_fake_hardware"))
+    if use_fake_hardware == "true":
+        controllers_yaml_dict["moveit_simple_controller_manager"]["scaled_joint_trajectory_controller"]["default"] = False
+        controllers_yaml_dict["moveit_simple_controller_manager"]["joint_trajectory_controller"]["default"] = True
+
     # Joint Limits Configuration
     joint_limits_yaml = os.path.join(
         get_package_share_directory(str(moveit_config_package.perform(context))),
@@ -102,10 +109,11 @@ def launch_setup(context, *args, **kwargs):
         MoveItConfigsBuilder(robot_name="rox_ur", package_name="neo_rox_moveit2")
         .robot_description_semantic(file_path=srdf, mappings={"prefix": prefix})
         .robot_description(file_path=urdf, mappings={"arm_type": arm_type, "use_gz": use_gz, "use_ur_dc": ur_dc, "force_abs_paths": "true"})
-        .trajectory_execution(file_path=controllers_yaml)
         .joint_limits(file_path=joint_limits_yaml)
         .to_moveit_configs()
     )
+    # Override the trajectory_execution with the modified dictionary
+    moveit_config.trajectory_execution = controllers_yaml_dict
 
     # Start the actual move_group node/action server
     move_group_node = Node(
@@ -176,25 +184,26 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "moveit_config_package",
             default_value="neo_rox_moveit2",
-            description="MoveIt config package with robot SRDF/XACRO files. Usually the argument \
-        is not set, it enables use of a custom moveit config.",
+            description='MoveIt config package with robot SRDF/XACRO files. Usually the argument\n'
+            '\t is not set, it enables use of a custom moveit config.',
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "use_sim_time",
             default_value="false",
-            description="Make MoveIt to use simulation time. This is needed for the trajectory planing in simulation.",
+            description='Make MoveIt to use simulation time.\n'
+              '\t This is needed for the trajectory planing in simulation.',
         )
     )
 
     declared_arguments.append(
         DeclareLaunchArgument(
             "prefix",
-            default_value='""',
-            description="Prefix of the joint names, useful for \
-        multi-robot setup. If changed than also joint names in the controllers' configuration \
-        have to be updated.",
+            default_value='',
+            description='Prefix of the joint names. If changed,\n'
+            '\t the joint names in the controllers\n'
+            '\t configuration must also be updated.',
         )
     )
     
@@ -211,6 +220,14 @@ def generate_launch_description():
             "use_gz",
             default_value="false",
             description="Whether to enable Gazebo simulation.",
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_fake_hardware",
+            default_value="false",
+            description="Indicate whether robot is running with fake hardware mirroring command to its states.",
         )
     )
 

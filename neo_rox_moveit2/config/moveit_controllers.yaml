@@ -24,7 +24,6 @@ moveit_simple_controller_manager:
       - $(var prefix)wrist_2_joint
       - $(var prefix)wrist_3_joint
 
-
   joint_trajectory_controller:
     action_ns: follow_joint_trajectory
     type: FollowJointTrajectory
