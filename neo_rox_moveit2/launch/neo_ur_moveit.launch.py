@@ -58,7 +58,11 @@ def launch_setup(context, *args, **kwargs):
     launch_rviz = LaunchConfiguration("launch_rviz")
     ur_dc = LaunchConfiguration("use_ur_dc")
     use_gz = LaunchConfiguration("use_gz")
+    use_gz_value = context.perform_substitution(LaunchConfiguration("use_gz")).lower()
     
+    if use_gz_value == "true":
+        use_sim_time = True
+
     urdf = os.path.join(get_package_share_directory('rox_description'),
         'urdf',
         'rox.urdf.xacro')
@@ -84,9 +88,9 @@ def launch_setup(context, *args, **kwargs):
         str(controllers_yaml_with_substitutions.param_file)
     )
 
-    # The scaled_joint_trajectory_controller does not work on fake hardware
-    use_fake_hardware = context.perform_substitution(LaunchConfiguration("use_fake_hardware"))
-    if use_fake_hardware == "true":
+    # The scaled_joint_trajectory_controller does not work on mock hardware
+    use_mock_hardware = context.perform_substitution(LaunchConfiguration("use_mock_hardware")).lower()
+    if use_mock_hardware == "true" or use_gz_value == "true":
         controllers_yaml_dict["moveit_simple_controller_manager"]["scaled_joint_trajectory_controller"]["default"] = False
         controllers_yaml_dict["moveit_simple_controller_manager"]["joint_trajectory_controller"]["default"] = True
 
@@ -108,7 +112,7 @@ def launch_setup(context, *args, **kwargs):
     moveit_config = (
         MoveItConfigsBuilder(robot_name="rox_ur", package_name="neo_rox_moveit2")
         .robot_description_semantic(file_path=srdf, mappings={"prefix": prefix})
-        .robot_description(file_path=urdf, mappings={"arm_type": arm_type, "use_gz": use_gz, "use_ur_dc": ur_dc, "force_abs_paths": "true"})
+        .robot_description(file_path=urdf, mappings={"arm_type": arm_type, "use_gz": use_gz, "use_ur_dc": ur_dc, "force_abs_paths": use_gz})
         .joint_limits(file_path=joint_limits_yaml)
         .to_moveit_configs()
     )
@@ -225,9 +229,9 @@ def generate_launch_description():
 
     declared_arguments.append(
         DeclareLaunchArgument(
-            "use_fake_hardware",
+            "use_mock_hardware",
             default_value="false",
-            description="Indicate whether robot is running with fake hardware mirroring command to its states.",
+            description="Indicate whether robot is running with mock hardware mirroring command to its states.",
         )
     )
 
